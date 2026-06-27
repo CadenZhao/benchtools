@@ -4,9 +4,13 @@ A tiny, single-page sequence toolbox for the bench. Paste a DNA/RNA sequence and
 
 No install, no build step, no backend. It's one `index.html` that runs entirely in your browser; your sequences never leave the page.
 
+**▶ Live app: https://cadenzhao.github.io/benchtools/**
+
 ## Use it
 
-Open [`index.html`](index.html) — that's the whole app. Or host it for free on GitHub Pages and bookmark it next to your bench.
+**[Open the live app](https://cadenzhao.github.io/benchtools/)** — it runs instantly in your browser, nothing to install or download.
+
+The whole thing is a single [`index.html`](index.html); you can also download that one file and open it locally, or self-host it anywhere static files are served.
 
 ## What it computes
 
