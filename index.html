@@ -8,9 +8,9 @@
   :root { --fg:#1a1a1a; --muted:#666; --line:#e5e5e5; --accent:#2563eb; --bg:#fff; --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
   @media (prefers-color-scheme: dark){ :root{ --fg:#e6e6e6; --muted:#9aa0a6; --line:#2a2a2a; --accent:#6ea8fe; --bg:#161616; } }
   * { box-sizing:border-box; }
-  body { font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--fg); background:var(--bg); margin:0; padding:2rem 1.25rem; max-width:760px; margin-inline:auto; }
+  body { font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--fg); background:var(--bg); margin:0; padding:2rem 1.25rem; max-width:820px; margin-inline:auto; }
   h1 { font-size:1.4rem; margin:0 0 .2rem; }
-  .sub { color:var(--muted); margin:0 0 1.5rem; }
+  .sub { color:var(--muted); margin:0 0 1.25rem; }
   textarea { width:100%; min-height:120px; font-family:var(--mono); font-size:.95rem; padding:.7rem; border:1px solid var(--line); border-radius:8px; background:transparent; color:var(--fg); resize:vertical; }
   .row { display:flex; gap:1rem; flex-wrap:wrap; align-items:center; margin:.75rem 0 1.25rem; color:var(--muted); font-size:.9rem; }
   .stat b { color:var(--fg); font-variant-numeric:tabular-nums; }
@@ -19,27 +19,82 @@
   .out { font-family:var(--mono); font-size:.9rem; word-break:break-all; white-space:pre-wrap; }
   footer { margin-top:2rem; color:var(--muted); font-size:.85rem; border-top:1px solid var(--line); padding-top:1rem; }
   a { color:var(--accent); }
+  .tabs { display:flex; gap:.25rem; margin:0 0 1.25rem; border-bottom:1px solid var(--line); }
+  .tab { padding:.5rem .9rem; cursor:pointer; border:none; background:none; color:var(--muted); font:inherit; font-size:.95rem; border-bottom:2px solid transparent; margin-bottom:-1px; }
+  .tab.active { color:var(--fg); border-bottom-color:var(--accent); font-weight:600; }
+  .panel { display:none; } .panel.active { display:block; }
+  label.fld { display:inline-flex; flex-direction:column; gap:.2rem; font-size:.78rem; color:var(--muted); }
+  input[type=number], select { font:inherit; font-size:.9rem; padding:.35rem .5rem; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--fg); }
+  input[type=number]{ width:8.5rem; font-family:var(--mono); }
+  .conv { display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end; }
+  .conv .read { font-size:.85rem; color:var(--muted); flex-basis:100%; margin-top:.2rem; }
+  .conv .read b{ color:var(--fg); font-variant-numeric:tabular-nums; }
+  .tablewrap { overflow-x:auto; }
+  table { border-collapse:collapse; width:100%; font-size:.82rem; }
+  th, td { text-align:left; padding:.4rem .5rem; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; white-space:nowrap; }
+  td.seq { font-family:var(--mono); max-width:240px; word-break:break-all; }
+  th.num, td.num { text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono); }
+  button.copy { font:inherit; font-size:.85rem; padding:.35rem .7rem; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--fg); cursor:pointer; }
 </style>
 </head>
 <body>
   <h1>benchtools</h1>
-  <p class="sub">Paste a DNA/RNA sequence. Everything updates as you type. Runs entirely in your browser — nothing leaves the page.</p>
+  <p class="sub">A tiny sequence toolbox. Everything runs in your browser — nothing leaves the page.</p>
 
-  <textarea id="seq" placeholder="e.g. ATGGCCTGCAAAGATGTGAACTAA" autofocus></textarea>
-
-  <div class="row">
-    <span class="stat">Length: <b id="len">0</b> nt</span>
-    <span class="stat">GC: <b id="gc">0</b>%</span>
-    <span class="stat">Tm: <b id="tm">–</b> °C</span>
-    <span class="stat">MW (ssDNA): <b id="mw">–</b> Da</span>
+  <div class="tabs">
+    <button class="tab active" data-tab="single">Single</button>
+    <button class="tab" data-tab="batch">Batch</button>
   </div>
 
-  <div class="card"><h2>Reverse complement</h2><div class="out" id="rc"></div></div>
-  <div class="card"><h2>RNA (transcribe)</h2><div class="out" id="rna"></div></div>
-  <div class="card"><h2>Protein (frame +1, standard code)</h2><div class="out" id="prot"></div></div>
+  <!-- ============ SINGLE ============ -->
+  <section id="single" class="panel active">
+    <textarea id="seq" placeholder="Paste one DNA/RNA sequence, e.g. ATGGCCTGCAAAGATGTGAACTAA" autofocus></textarea>
+
+    <div class="row">
+      <span class="stat">Length: <b id="len">0</b> nt</span>
+      <span class="stat">GC: <b id="gc">0</b>%</span>
+      <span class="stat">Tm: <b id="tm">–</b> °C</span>
+    </div>
+
+    <div class="card"><h2>Base composition</h2><div class="out" id="comp">—</div></div>
+
+    <div class="card"><h2>Molecular weight (Da)</h2><div class="out" id="mw">—</div></div>
+
+    <div class="card">
+      <h2>Concentration ⇄ molarity</h2>
+      <div class="conv">
+        <label class="fld">basis
+          <select id="basis"><option value="ssDNA">ssDNA</option><option value="dsDNA">dsDNA</option><option value="ssRNA">ssRNA</option></select>
+        </label>
+        <label class="fld">ng/µL <input type="number" id="ngul" min="0" step="any" placeholder="e.g. 50"></label>
+        <label class="fld">nM <input type="number" id="nm" min="0" step="any" placeholder="e.g. 100"></label>
+        <div class="read" id="convread">— enter a sequence and one value</div>
+      </div>
+    </div>
+
+    <div class="card"><h2>Reverse complement</h2><div class="out" id="rc"></div></div>
+    <div class="card"><h2>RNA (transcribe)</h2><div class="out" id="rna"></div></div>
+    <div class="card"><h2>Protein (frame +1, standard code)</h2><div class="out" id="prot"></div></div>
+  </section>
+
+  <!-- ============ BATCH ============ -->
+  <section id="batch" class="panel">
+    <textarea id="bseq" placeholder=">seq1&#10;ATGGCCTGCAAAGATGTGAACTAA&#10;>seq2&#10;GGGTTAACCGGTATGCATGC&#10;&#10;Paste FASTA, or one sequence per line."></textarea>
+    <div class="row">
+      <span class="stat"><b id="bcount">0</b> sequences</span>
+      <button class="copy" id="bcopy">Copy table (TSV)</button>
+    </div>
+    <div class="tablewrap">
+      <table id="btable">
+        <thead><tr><th>Name</th><th class="num">Len</th><th class="num">GC%</th><th class="num">Tm</th><th>Reverse complement</th><th>RNA</th><th>Protein</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
 
   <footer>
-    Tm: Wallace rule for &lt;14 nt, else the GC-based formula 64.9 + 41·(GC−16.4)/len. Translation uses the standard genetic code, frame +1. Estimates for primer-design sanity checks, not a substitute for a full design tool.
+    Tm: Wallace rule for &lt;14 nt, else 64.9 + 41·(GC−16.4)/len. MW: anhydrous ssDNA / dsDNA (both strands) / ssRNA. Molarity from MW; copies/µL via Avogadro. Translation: standard genetic code, frame +1. Estimates for bench sanity checks, not a substitute for a full design tool.
   </footer>
 
 <script>
@@ -55,45 +110,131 @@ const COMP = {A:'T',T:'A',G:'C',C:'G',U:'A',N:'N'};
 const $ = id => document.getElementById(id);
 
 function clean(s){ return s.toUpperCase().replace(/U/g,'T').replace(/[^ACGTN]/g,''); }
+function counts(s){ const c={A:0,C:0,G:0,T:0,N:0}; for (const ch of s) c[ch]++; return c; }
+function gcPct(c,n){ return n ? Math.round(1000*(c.G+c.C)/n)/10 : 0; }
+function tm(c,n){
+  if (!n) return null;
+  if (n < 14) return 2*(c.A+c.T) + 4*(c.G+c.C);
+  return Math.round(10*(64.9 + 41*((c.G+c.C-16.4)/n)))/10;
+}
+function revcomp(s){ return s.split('').reverse().map(ch => COMP[ch] || 'N').join(''); }
+function toRNA(s){ return s.replace(/T/g,'U'); }
+function translate(s){ let p=''; for (let i=0; i+3<=s.length; i+=3) p += (CODON[s.slice(i,i+3)] || 'X'); return p; }
 
-function update(){
-  const raw = $('seq').value;
-  const s = clean(raw);
+// Molecular weights (anhydrous; IDT formulae). N is ignored.
+function mwSSDNA(c){ return c.A*313.21 + c.T*304.2 + c.C*289.18 + c.G*329.21 - 61.96; }
+function mwSSRNA(c){ return c.A*329.21 + c.T*306.17 + c.C*305.18 + c.G*345.21 + 159.0; } // T treated as U
+function mwDSDNA(c){
+  const anti = c.T*313.21 + c.A*304.2 + c.G*289.18 + c.C*329.21 - 61.96; // complementary strand
+  return mwSSDNA(c) + anti;
+}
+function round(x,d){ const f = Math.pow(10,d); return Math.round(x*f)/f; }
+const fmt = x => Math.round(x).toLocaleString();
+
+/* ---------- single ---------- */
+function updateSingle(){
+  const s = clean($('seq').value);
   const n = s.length;
+  const c = counts(s);
   $('len').textContent = n;
+  $('gc').textContent = gcPct(c,n);
+  const t = tm(c,n); $('tm').textContent = t === null ? '–' : t;
 
-  const counts = {A:0,C:0,G:0,T:0,N:0};
-  for (const c of s) counts[c]++;
-  const gc = n ? Math.round(1000*(counts.G+counts.C)/n)/10 : 0;
-  $('gc').textContent = gc;
-
-  // Tm
-  let tm = '–';
-  if (n >= 1) {
-    if (n < 14) tm = 2*(counts.A+counts.T) + 4*(counts.G+counts.C);
-    else tm = Math.round(10*(64.9 + 41*((counts.G+counts.C-16.4)/n)))/10;
+  if (n){
+    const pct = x => round(100*x/n,1);
+    let comp = `A ${c.A} (${pct(c.A)}%)   C ${c.C} (${pct(c.C)}%)   G ${c.G} (${pct(c.G)}%)   T/U ${c.T} (${pct(c.T)}%)`;
+    if (c.N) comp += `   N ${c.N} (${pct(c.N)}%)`;
+    $('comp').textContent = comp;
+    $('mw').textContent = `ssDNA ${fmt(mwSSDNA(c))}    dsDNA ${fmt(mwDSDNA(c))}    ssRNA ${fmt(mwSSRNA(c))}`;
+  } else {
+    $('comp').textContent = '—';
+    $('mw').textContent = '—';
   }
-  $('tm').textContent = tm;
 
-  // MW (anhydrous ssDNA approximation)
-  let mw = '–';
-  if (n >= 1) mw = Math.round(counts.A*313.21 + counts.T*304.2 + counts.C*289.18 + counts.G*329.21 - 61.96);
-  $('mw').textContent = mw === '–' ? '–' : mw.toLocaleString();
-
-  // reverse complement
-  $('rc').textContent = s.split('').reverse().map(c => COMP[c] || 'N').join('');
-
-  // RNA
-  $('rna').textContent = s.replace(/T/g,'U');
-
-  // protein, frame +1
-  let prot = '';
-  for (let i=0; i+3<=n; i+=3) prot += (CODON[s.slice(i,i+3)] || 'X');
-  $('prot').textContent = prot;
+  $('rc').textContent = revcomp(s);
+  $('rna').textContent = toRNA(s);
+  $('prot').textContent = translate(s);
+  updateConv();
 }
 
-$('seq').addEventListener('input', update);
-update();
+/* ---------- concentration <-> molarity ---------- */
+let convDriver = 'ngul';
+function currentMW(){
+  const s = clean($('seq').value);
+  if (!s.length) return null;
+  const c = counts(s);
+  const b = $('basis').value;
+  return b === 'dsDNA' ? mwDSDNA(c) : b === 'ssRNA' ? mwSSRNA(c) : mwSSDNA(c);
+}
+function updateConv(){
+  const mw = currentMW(), ngul = $('ngul'), nm = $('nm');
+  if (mw === null){ $('convread').textContent = '— enter a sequence and one value'; return; }
+  if (convDriver === 'ngul'){
+    nm.value = ngul.value === '' ? '' : round(1e6*parseFloat(ngul.value)/mw, 4);
+  } else {
+    ngul.value = nm.value === '' ? '' : round(parseFloat(nm.value)*mw/1e6, 4);
+  }
+  const nMval = nm.value === '' ? null : parseFloat(nm.value);
+  if (nMval === null || isNaN(nMval)){
+    $('convread').innerHTML = `MW ≈ <b>${fmt(mw)}</b> Da (${$('basis').value}) — enter ng/µL or nM`;
+    return;
+  }
+  const uM = nMval/1000, copies = nMval*6.022e8;
+  $('convread').innerHTML = `MW ≈ <b>${fmt(mw)}</b> Da (${$('basis').value}) · <b>${round(uM,4)}</b> µM · <b>${copies.toExponential(2)}</b> copies/µL`;
+}
+
+/* ---------- batch ---------- */
+function parseSeqs(text){
+  const recs = [], lines = text.split(/\r?\n/);
+  const hasHeader = lines.some(l => l.trim().startsWith('>'));
+  if (hasHeader){
+    let cur = null;
+    for (const l of lines){
+      if (l.trim().startsWith('>')){ if (cur) recs.push(cur); cur = {name: l.trim().slice(1).trim() || '(unnamed)', seq: ''}; }
+      else if (cur){ cur.seq += l.trim(); }
+    }
+    if (cur) recs.push(cur);
+  } else {
+    let i = 0;
+    for (const l of lines){ const t = l.trim(); if (t){ i++; recs.push({name: 'seq'+i, seq: t}); } }
+  }
+  return recs;
+}
+function batchRows(){
+  return parseSeqs($('bseq').value).map(r => {
+    const s = clean(r.seq), n = s.length, c = counts(s), t = tm(c,n);
+    return { name: r.name, n, gc: n ? gcPct(c,n) : '', tm: t === null ? '' : t, rc: revcomp(s), rna: toRNA(s), prot: translate(s) };
+  });
+}
+function esc(x){ return String(x).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+function updateBatch(){
+  const rows = batchRows();
+  $('bcount').textContent = rows.length;
+  const tb = $('btable').querySelector('tbody');
+  tb.innerHTML = rows.map(r =>
+    `<tr><td>${esc(r.name)}</td><td class="num">${r.n}</td><td class="num">${r.gc===''?'–':r.gc}</td><td class="num">${r.tm===''?'–':r.tm}</td><td class="seq">${r.rc}</td><td class="seq">${r.rna}</td><td class="seq">${r.prot}</td></tr>`
+  ).join('');
+}
+
+/* ---------- wiring ---------- */
+$('seq').addEventListener('input', updateSingle);
+$('ngul').addEventListener('input', () => { convDriver = 'ngul'; updateConv(); });
+$('nm').addEventListener('input', () => { convDriver = 'nm'; updateConv(); });
+$('basis').addEventListener('change', updateConv);
+$('bseq').addEventListener('input', updateBatch);
+$('bcopy').addEventListener('click', () => {
+  const header = ['name','length','GC%','Tm','revcomp','RNA','protein'];
+  const tsv = [header.join('\t')].concat(batchRows().map(r => [r.name,r.n,r.gc,r.tm,r.rc,r.rna,r.prot].join('\t'))).join('\n');
+  navigator.clipboard.writeText(tsv).then(() => { const b = $('bcopy'); b.textContent = 'Copied!'; setTimeout(() => b.textContent = 'Copy table (TSV)', 1200); });
+});
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+  t.classList.add('active'); $(t.dataset.tab).classList.add('active');
+}));
+
+updateSingle();
+updateBatch();
 </script>
 </body>
 </html>
