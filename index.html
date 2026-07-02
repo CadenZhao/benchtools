@@ -76,6 +76,9 @@
     <div class="card"><h2>Reverse complement</h2><div class="out" id="rc"></div></div>
     <div class="card"><h2>RNA (transcribe)</h2><div class="out" id="rna"></div></div>
     <div class="card"><h2>Protein (frame +1, standard code)</h2><div class="out" id="prot"></div></div>
+    <div class="card"><h2>Six-frame translation</h2><div class="out" id="sixframe">—</div></div>
+    <div class="card"><h2>Longest ORF (ATG→stop, all 6 frames)</h2><div class="out" id="orf">—</div></div>
+    <div class="card"><h2>Restriction sites (common cutters)</h2><div class="out" id="resites">—</div></div>
   </section>
 
   <!-- ============ BATCH ============ -->
@@ -121,6 +124,46 @@ function revcomp(s){ return s.split('').reverse().map(ch => COMP[ch] || 'N').joi
 function toRNA(s){ return s.replace(/T/g,'U'); }
 function translate(s){ let p=''; for (let i=0; i+3<=s.length; i+=3) p += (CODON[s.slice(i,i+3)] || 'X'); return p; }
 
+function sixFrames(s){
+  const rc = revcomp(s), out = [];
+  for (let f=0; f<3; f++) out.push('+' + (f+1) + '  ' + (translate(s.slice(f)) || '—'));
+  for (let f=0; f<3; f++) out.push('−' + (f+1) + '  ' + (translate(rc.slice(f)) || '—'));
+  return out;
+}
+function longestORF(s){
+  let best = null;
+  for (const [seq, sign] of [[s,'+'], [revcomp(s),'−']]){
+    for (let f=0; f<3; f++){
+      let i = f;
+      while (i+3 <= seq.length){
+        if (seq.slice(i,i+3) === 'ATG'){
+          let pep = '', j = i, stop = false;
+          for (; j+3 <= seq.length; j += 3){
+            const aa = CODON[seq.slice(j,j+3)] || 'X';
+            if (aa === '*'){ stop = true; break; }
+            pep += aa;
+          }
+          if (stop){ if (!best || pep.length > best.aa) best = {frame: sign+(f+1), aa: pep.length, pep}; i = j+3; continue; }
+          break; // no downstream stop in this frame
+        }
+        i += 3;
+      }
+    }
+  }
+  return best;
+}
+const ENZYMES = {EcoRI:'GAATTC',BamHI:'GGATCC',HindIII:'AAGCTT',NotI:'GCGGCCGC',XhoI:'CTCGAG',SalI:'GTCGAC',XbaI:'TCTAGA',KpnI:'GGTACC',SacI:'GAGCTC',PstI:'CTGCAG',SmaI:'CCCGGG',NcoI:'CCATGG',NdeI:'CATATG',EcoRV:'GATATC',BglII:'AGATCT',SpeI:'ACTAGT'};
+function findSites(s){
+  const out = [];
+  for (const name in ENZYMES){
+    const site = ENZYMES[name], pos = [];
+    let i = s.indexOf(site);
+    while (i !== -1){ pos.push(i+1); i = s.indexOf(site, i+1); }
+    if (pos.length) out.push({name, site, pos});
+  }
+  return out.sort((a,b) => a.pos.length - b.pos.length);
+}
+
 // Molecular weights (anhydrous; IDT formulae). N is ignored.
 function mwSSDNA(c){ return c.A*313.21 + c.T*304.2 + c.C*289.18 + c.G*329.21 - 61.96; }
 function mwSSRNA(c){ return c.A*329.21 + c.T*306.17 + c.C*305.18 + c.G*345.21 + 159.0; } // T treated as U
@@ -154,6 +197,17 @@ function updateSingle(){
   $('rc').textContent = revcomp(s);
   $('rna').textContent = toRNA(s);
   $('prot').textContent = translate(s);
+
+  $('sixframe').textContent = n ? sixFrames(s).join('\n') : '—';
+  if (n){
+    const o = longestORF(s);
+    $('orf').textContent = o ? `Frame ${o.frame} · ${o.aa} aa\n${o.pep}` : 'none (no ATG…stop in any frame)';
+    const sites = findSites(s);
+    $('resites').innerHTML = sites.length
+      ? sites.map(e => `${e.name} (${e.site}) ×${e.pos.length} @ ${e.pos.join(', ')}`).join('<br>')
+      : 'none of the common enzymes cut';
+  } else { $('orf').textContent = '—'; $('resites').textContent = '—'; }
+
   updateConv();
 }
 

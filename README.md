@@ -21,6 +21,8 @@ The whole thing is a single [`index.html`](index.html); you can also download th
 - **Tm** — Wallace rule below 14 nt, otherwise the GC-based formula `64.9 + 41·(GC−16.4)/length`
 - **Molecular weight** — anhydrous ssDNA, dsDNA (both strands), and ssRNA
 - **Concentration ⇄ molarity** — convert ng/µL ↔ nM for the sequence (choose ssDNA/dsDNA/ssRNA), with µM and copies/µL
+- **Six-frame translation** and **longest ORF** — all three forward and reverse frames, with the longest ATG→stop ORF highlighted
+- **Restriction sites** — scans common cloning enzymes (EcoRI, BamHI, HindIII, NotI, XhoI, …) and reports counts and positions
 
 **Batch mode** — paste FASTA or one sequence per line and get a table of length, GC%, Tm, reverse complement, RNA, and protein for every sequence, with one-click **copy as TSV**.
 
