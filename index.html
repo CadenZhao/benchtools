@@ -17,6 +17,7 @@
   .card { border:1px solid var(--line); border-radius:8px; padding:.75rem .9rem; margin:.6rem 0; }
   .card h2 { font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 0 .4rem; font-weight:600; }
   .out { font-family:var(--mono); font-size:.9rem; word-break:break-all; white-space:pre-wrap; }
+  .out.names { word-break:normal; }   /* wrap between enzyme names, never inside one */
   footer { margin-top:2rem; color:var(--muted); font-size:.85rem; border-top:1px solid var(--line); padding-top:1rem; }
   a { color:var(--accent); }
   .tabs { display:flex; gap:.25rem; margin:0 0 1.25rem; border-bottom:1px solid var(--line); }
@@ -83,7 +84,7 @@
     <div class="card"><h2>Six-frame translation</h2><div class="out" id="sixframe">—</div></div>
     <div class="card"><h2>Longest ORF (ATG→stop, all 6 frames)</h2><div class="out" id="orf">—</div></div>
     <div class="card"><h2>Restriction sites (common cutters)</h2><div class="out" id="resites">—</div></div>
-    <div class="card"><h2>Non-cutters (do not cut this sequence)</h2><div class="out" id="noncut">—</div></div>
+    <div class="card"><h2>Non-cutters (do not cut this sequence)</h2><div class="out names" id="noncut">—</div></div>
   </section>
 
   <!-- ============ BATCH ============ -->
@@ -97,7 +98,7 @@
       <button class="btn" id="dl-csv" disabled>CSV</button>
       <button class="btn" id="dl-xlsx" disabled>Excel (.xlsx)</button>
     </div>
-    <div class="card"><h2>Non-cutters — enzymes that cut none of these sequences</h2><div class="out" id="bnoncut">—</div></div>
+    <div class="card"><h2>Non-cutters — enzymes that cut none of these sequences</h2><div class="out names" id="bnoncut">—</div></div>
     <div class="tablewrap">
       <table id="btable">
         <thead><tr><th>Name</th><th class="num">Len</th><th class="num">GC%</th><th class="num">Tm</th><th>Reverse complement</th><th>RNA</th><th>Protein</th><th>Restriction sites</th></tr></thead>
@@ -107,7 +108,7 @@
   </section>
 
   <footer>
-    Tm: Wallace rule for &lt;14 nt, else 64.9 + 41·(GC−16.4)/len. MW: anhydrous ssDNA / dsDNA (both strands) / ssRNA. Molarity from MW; copies/µL via Avogadro. Translation: standard genetic code, frame +1. Estimates for bench sanity checks, not a substitute for a full design tool.
+    Tm: Wallace rule for &lt;14 nt, else 64.9 + 41·(GC−16.4)/len. MW: anhydrous ssDNA / dsDNA (both strands) / ssRNA. Molarity from MW; copies/µL via Avogadro. Translation: standard genetic code, frame +1. Restriction sites: 68 common enzymes, recognition sequences taken from <a href="http://rebase.neb.com">REBASE</a>; the non-palindromic Type IIS sites (AarI, BbsI, BsaI, BsmBI, SapI) are searched on both strands and annotated + / −. Positions are 1-based and mark the start of the recognition sequence, not the cut position. Estimates for bench sanity checks, not a substitute for a full design tool.
   </footer>
 
 <script>
@@ -162,17 +163,48 @@ function longestORF(s){
   }
   return best;
 }
-const ENZYMES = {EcoRI:'GAATTC',BamHI:'GGATCC',HindIII:'AAGCTT',NotI:'GCGGCCGC',XhoI:'CTCGAG',SalI:'GTCGAC',XbaI:'TCTAGA',KpnI:'GGTACC',SacI:'GAGCTC',PstI:'CTGCAG',SmaI:'CCCGGG',NcoI:'CCATGG',NdeI:'CATATG',EcoRV:'GATATC',BglII:'AGATCT',SpeI:'ACTAGT'};
+// Recognition sequences verified against REBASE (rebase.neb.com), version 608.
+// Alphabetical. The five non-palindromic Type IIS enzymes (AarI, BbsI, BsaI, BsmBI,
+// SapI) are searched on both strands — see findSites.
+const ENZYMES = {
+  AarI:'CACCTGC', AatII:'GACGTC', AclI:'AACGTT', AfeI:'AGCGCT', AflII:'CTTAAG',
+  AgeI:'ACCGGT', ApaI:'GGGCCC', ApaLI:'GTGCAC', AscI:'GGCGCGCC', AseI:'ATTAAT',
+  AvrII:'CCTAGG', BamHI:'GGATCC', BbsI:'GAAGAC', BclI:'TGATCA', BglII:'AGATCT',
+  BsaI:'GGTCTC', BsiWI:'CGTACG', BsmBI:'CGTCTC', BspEI:'TCCGGA', BspHI:'TCATGA',
+  BsrGI:'TGTACA', BssHII:'GCGCGC', BstBI:'TTCGAA', BstZ17I:'GTATAC', ClaI:'ATCGAT',
+  DraI:'TTTAAA', EagI:'CGGCCG', EcoRI:'GAATTC', EcoRV:'GATATC', FseI:'GGCCGGCC',
+  FspI:'TGCGCA', HindIII:'AAGCTT', HpaI:'GTTAAC', KpnI:'GGTACC', MfeI:'CAATTG',
+  MluI:'ACGCGT', MscI:'TGGCCA', NaeI:'GCCGGC', NarI:'GGCGCC', NcoI:'CCATGG',
+  NdeI:'CATATG', NheI:'GCTAGC', NotI:'GCGGCCGC', NruI:'TCGCGA', NsiI:'ATGCAT',
+  PacI:'TTAATTAA', PciI:'ACATGT', PmeI:'GTTTAAAC', PmlI:'CACGTG', PstI:'CTGCAG',
+  PvuI:'CGATCG', PvuII:'CAGCTG', SacI:'GAGCTC', SacII:'CCGCGG', SalI:'GTCGAC',
+  SapI:'GCTCTTC', SbfI:'CCTGCAGG', ScaI:'AGTACT', SmaI:'CCCGGG', SnaBI:'TACGTA',
+  SpeI:'ACTAGT', SphI:'GCATGC', SspI:'AATATT', StuI:'AGGCCT', SwaI:'ATTTAAAT',
+  XbaI:'TCTAGA', XhoI:'CTCGAG', XmaI:'CCCGGG'
+};
+function allOccurrences(s, sub){
+  const out = [];
+  let i = s.indexOf(sub);
+  while (i !== -1){ out.push(i+1); i = s.indexOf(sub, i+1); }   // 1-based
+  return out;
+}
 function findSites(s){
   const out = [];
   for (const name in ENZYMES){
-    const site = ENZYMES[name], pos = [];
-    let i = s.indexOf(site);
-    while (i !== -1){ pos.push(i+1); i = s.indexOf(site, i+1); }
-    if (pos.length) out.push({name, site, pos});
+    const site = ENZYMES[name], rcSite = revcomp(site), pal = site === rcSite;
+    const hits = allOccurrences(s, site).map(p => ({p, strand:'+'}));
+    // a non-palindromic site can also sit on the bottom strand — miss these and a
+    // "non-cutter" could quietly cut your construct
+    if (!pal) allOccurrences(s, rcSite).forEach(p => hits.push({p, strand:'-'}));
+    if (hits.length){
+      hits.sort((a,b) => a.p - b.p);
+      out.push({name, site, pal, hits});
+    }
   }
-  return out.sort((a,b) => a.pos.length - b.pos.length);
+  return out.sort((a,b) => a.hits.length - b.hits.length || (a.name < b.name ? -1 : 1));
 }
+// positions; strand is only meaningful (and only shown) for non-palindromic sites
+function fmtHits(e, sep){ return e.hits.map(h => e.pal ? h.p : h.p + h.strand).join(sep); }
 const ENZYME_NAMES = Object.keys(ENZYMES);
 // SnapGene-style non-cutters: enzymes from the panel with no site in the given sequence(s)
 function nonCutters(cutNames){
@@ -226,7 +258,7 @@ function updateSingle(){
     $('orf').textContent = o ? `Frame ${o.frame} · ${o.aa} aa\n${o.pep}` : 'none (no ATG…stop in any frame)';
     const sites = findSites(s);
     $('resites').innerHTML = sites.length
-      ? sites.map(e => `${e.name} (${e.site}) ×${e.pos.length} @ ${e.pos.join(', ')}`).join('<br>')
+      ? sites.map(e => `${e.name} (${e.site}) ×${e.hits.length} @ ${fmtHits(e, ', ')}`).join('<br>')
       : 'none of the common enzymes cut';
     showNonCutters('noncut', sites.map(e => e.name));
   } else { $('orf').textContent = '—'; $('resites').textContent = '—'; $('noncut').textContent = '—'; }
@@ -281,7 +313,7 @@ function batchRows(){
   return parseSeqs($('bseq').value).map(r => {
     const s = clean(r.seq), n = s.length, c = counts(s), t = tm(c,n);
     const sites = n ? findSites(s) : [];
-    const re = sites.map(e => `${e.name}@${e.pos.join('/')}`).join('; ');
+    const re = sites.map(e => `${e.name}@${fmtHits(e, '/')}`).join('; ');
     return { name: r.name, n, gc: n ? gcPct(c,n) : '', tm: t === null ? '' : t, rc: revcomp(s), rna: toRNA(s), prot: translate(s), re, reNames: sites.map(e => e.name) };
   });
 }
