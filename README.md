@@ -23,8 +23,9 @@ The whole thing is a single [`index.html`](index.html); you can also download th
 - **Concentration ⇄ molarity** — convert ng/µL ↔ nM for the sequence (choose ssDNA/dsDNA/ssRNA), with µM and copies/µL
 - **Six-frame translation** and **longest ORF** — all three forward and reverse frames, with the longest ATG→stop ORF highlighted
 - **Restriction sites** — scans common cloning enzymes (EcoRI, BamHI, HindIII, NotI, XhoI, …) and reports counts and positions
+- **Non-cutters** — the enzymes from that panel with *no* site in the sequence, i.e. the ones still safe to cut with
 
-**Batch mode** — paste FASTA or one sequence per line and get a table of length, GC%, Tm, reverse complement, RNA, protein, and restriction sites for every sequence, then **download it as TSV, CSV, or Excel (`.xlsx`)**. The `.xlsx` is written in-page by a tiny built-in ZIP writer — no library, no upload — with numeric columns as real numbers so Excel, openpyxl, and pandas all read them correctly.
+**Batch mode** — paste FASTA or one sequence per line and get a table of length, GC%, Tm, reverse complement, RNA, protein, and restriction sites for every sequence, then **download it as TSV, CSV, or Excel (`.xlsx`)**. Above the table, a **non-cutters** summary lists the enzymes that cut *none* of the pasted sequences — the ones you can use on the whole set. The `.xlsx` is written in-page by a tiny built-in ZIP writer — no library, no upload — with numeric columns as real numbers so Excel, openpyxl, and pandas all read them correctly.
 
 These are quick sanity checks (e.g. eyeballing a primer), not a replacement for a full primer-design suite.
 

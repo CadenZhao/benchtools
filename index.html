@@ -83,6 +83,7 @@
     <div class="card"><h2>Six-frame translation</h2><div class="out" id="sixframe">—</div></div>
     <div class="card"><h2>Longest ORF (ATG→stop, all 6 frames)</h2><div class="out" id="orf">—</div></div>
     <div class="card"><h2>Restriction sites (common cutters)</h2><div class="out" id="resites">—</div></div>
+    <div class="card"><h2>Non-cutters (do not cut this sequence)</h2><div class="out" id="noncut">—</div></div>
   </section>
 
   <!-- ============ BATCH ============ -->
@@ -96,6 +97,7 @@
       <button class="btn" id="dl-csv" disabled>CSV</button>
       <button class="btn" id="dl-xlsx" disabled>Excel (.xlsx)</button>
     </div>
+    <div class="card"><h2>Non-cutters — enzymes that cut none of these sequences</h2><div class="out" id="bnoncut">—</div></div>
     <div class="tablewrap">
       <table id="btable">
         <thead><tr><th>Name</th><th class="num">Len</th><th class="num">GC%</th><th class="num">Tm</th><th>Reverse complement</th><th>RNA</th><th>Protein</th><th>Restriction sites</th></tr></thead>
@@ -171,6 +173,18 @@ function findSites(s){
   }
   return out.sort((a,b) => a.pos.length - b.pos.length);
 }
+const ENZYME_NAMES = Object.keys(ENZYMES);
+// SnapGene-style non-cutters: enzymes from the panel with no site in the given sequence(s)
+function nonCutters(cutNames){
+  const cut = new Set(cutNames);
+  return ENZYME_NAMES.filter(nm => !cut.has(nm));
+}
+function showNonCutters(elId, cutNames){
+  const list = nonCutters(cutNames);
+  $(elId).textContent = list.length
+    ? `${list.length} of ${ENZYME_NAMES.length} — ${list.join(', ')}`
+    : 'none — every listed enzyme cuts';
+}
 
 // Molecular weights (anhydrous; IDT formulae). N is ignored.
 function mwSSDNA(c){ return c.A*313.21 + c.T*304.2 + c.C*289.18 + c.G*329.21 - 61.96; }
@@ -214,7 +228,8 @@ function updateSingle(){
     $('resites').innerHTML = sites.length
       ? sites.map(e => `${e.name} (${e.site}) ×${e.pos.length} @ ${e.pos.join(', ')}`).join('<br>')
       : 'none of the common enzymes cut';
-  } else { $('orf').textContent = '—'; $('resites').textContent = '—'; }
+    showNonCutters('noncut', sites.map(e => e.name));
+  } else { $('orf').textContent = '—'; $('resites').textContent = '—'; $('noncut').textContent = '—'; }
 
   updateConv();
 }
@@ -265,8 +280,9 @@ function parseSeqs(text){
 function batchRows(){
   return parseSeqs($('bseq').value).map(r => {
     const s = clean(r.seq), n = s.length, c = counts(s), t = tm(c,n);
-    const re = n ? findSites(s).map(e => `${e.name}@${e.pos.join('/')}`).join('; ') : '';
-    return { name: r.name, n, gc: n ? gcPct(c,n) : '', tm: t === null ? '' : t, rc: revcomp(s), rna: toRNA(s), prot: translate(s), re };
+    const sites = n ? findSites(s) : [];
+    const re = sites.map(e => `${e.name}@${e.pos.join('/')}`).join('; ');
+    return { name: r.name, n, gc: n ? gcPct(c,n) : '', tm: t === null ? '' : t, rc: revcomp(s), rna: toRNA(s), prot: translate(s), re, reNames: sites.map(e => e.name) };
   });
 }
 function esc(x){ return String(x).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
@@ -278,6 +294,9 @@ function updateBatch(){
     `<tr><td>${esc(r.name)}</td><td class="num">${r.n}</td><td class="num">${r.gc===''?'–':r.gc}</td><td class="num">${r.tm===''?'–':r.tm}</td><td class="seq">${r.rc}</td><td class="seq">${r.rna}</td><td class="seq">${r.prot}</td><td class="re">${r.re ? esc(r.re) : '–'}</td></tr>`
   ).join('');
   ['dl-tsv','dl-csv','dl-xlsx'].forEach(id => { $(id).disabled = rows.length === 0; });
+  // enzymes that cut none of the sequences — safe choices for the whole set
+  if (rows.length) showNonCutters('bnoncut', rows.flatMap(r => r.reNames));
+  else $('bnoncut').textContent = '—';
 }
 
 /* ---------- export: TSV / CSV / XLSX ---------- */
