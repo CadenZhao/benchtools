@@ -55,6 +55,7 @@
     <textarea id="seq" placeholder="Paste one DNA/RNA sequence, e.g. ATGGCCTGCAAAGATGTGAACTAA" autofocus></textarea>
 
     <div class="row">
+      <button class="btn" id="sexample">Load example</button>
       <span class="stat">Length: <b id="len">0</b> nt</span>
       <span class="stat">GC: <b id="gc">0</b>%</span>
       <span class="stat">Tm: <b id="tm">–</b> °C</span>
@@ -88,6 +89,7 @@
   <section id="batch" class="panel">
     <textarea id="bseq" placeholder=">seq1&#10;ATGGCCTGCAAAGATGTGAACTAA&#10;>seq2&#10;GGGTTAACCGGTATGCATGC&#10;&#10;Paste FASTA, or one sequence per line."></textarea>
     <div class="row">
+      <button class="btn" id="bexample">Load example</button>
       <span class="stat"><b id="bcount">0</b> sequences</span>
       <span class="stat">Download:</span>
       <button class="btn" id="dl-tsv" disabled>TSV</button>
@@ -377,7 +379,21 @@ function buildXlsx(){
   return zipStore(files.map(([name, xml]) => ({ name, data: enc.encode(xml) })));
 }
 
+/* ---------- examples ---------- */
+// chosen so every panel shows something: EcoRI at the 5' end, BamHI at the 3' end,
+// and an ATG…TAA open reading frame in between.
+const EXAMPLE_SINGLE = 'GAATTCATGGCCTGCAAAGATGTGAACTAAGGATCC';
+// primer_F and primer_R are exact reverse complements of each other — you can see it in the table.
+const EXAMPLE_BATCH = [
+  '>insert_EcoRI_BamHI', 'GAATTCATGGCCTGCAAAGATGTGAACTAAGGATCC',
+  '>primer_F', 'ACGTCCTGGATGATGGCGTGAA',
+  '>primer_R', 'TTCACGCCATCATCCAGGACGT',
+  '>polylinker', 'GAATTCGGATCCAAGCTTGCGGCCGCCTCGAG',
+].join('\n');
+
 /* ---------- wiring ---------- */
+$('sexample').addEventListener('click', () => { $('seq').value = EXAMPLE_SINGLE; updateSingle(); });
+$('bexample').addEventListener('click', () => { $('bseq').value = EXAMPLE_BATCH; updateBatch(); });
 $('seq').addEventListener('input', updateSingle);
 $('ngul').addEventListener('input', () => { convDriver = 'ngul'; updateConv(); });
 $('nm').addEventListener('input', () => { convDriver = 'nm'; updateConv(); });

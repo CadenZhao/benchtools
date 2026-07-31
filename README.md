@@ -8,7 +8,7 @@ No install, no build step, no backend. It's one `index.html` that runs entirely 
 
 ## Use it
 
-**[Open the live app](https://cadenzhao.github.io/benchtools/)** — it runs instantly in your browser, nothing to install or download.
+**[Open the live app](https://cadenzhao.github.io/benchtools/)** — it runs instantly in your browser, nothing to install or download. Click **Load example** in either tab to fill in a worked example and see every panel populate.
 
 The whole thing is a single [`index.html`](index.html); you can also download that one file and open it locally, or self-host it anywhere static files are served.
 
