@@ -24,7 +24,7 @@ The whole thing is a single [`index.html`](index.html); you can also download th
 - **Six-frame translation** and **longest ORF** — all three forward and reverse frames, with the longest ATG→stop ORF highlighted
 - **Restriction sites** — scans common cloning enzymes (EcoRI, BamHI, HindIII, NotI, XhoI, …) and reports counts and positions
 
-**Batch mode** — paste FASTA or one sequence per line and get a table of length, GC%, Tm, reverse complement, RNA, and protein for every sequence, with one-click **copy as TSV**.
+**Batch mode** — paste FASTA or one sequence per line and get a table of length, GC%, Tm, reverse complement, RNA, and protein for every sequence, then **download it as TSV, CSV, or Excel (`.xlsx`)**. The `.xlsx` is written in-page by a tiny built-in ZIP writer — no library, no upload — with numeric columns as real numbers so Excel, openpyxl, and pandas all read them correctly.
 
 These are quick sanity checks (e.g. eyeballing a primer), not a replacement for a full primer-design suite.
 
