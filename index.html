@@ -34,6 +34,7 @@
   th, td { text-align:left; padding:.4rem .5rem; border-bottom:1px solid var(--line); vertical-align:top; }
   th { color:var(--muted); font-weight:600; white-space:nowrap; }
   td.seq { font-family:var(--mono); max-width:240px; word-break:break-all; }
+  td.re { font-family:var(--mono); font-size:.78rem; max-width:220px; overflow-wrap:anywhere; }
   th.num, td.num { text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono); }
   button.btn { font:inherit; font-size:.85rem; padding:.35rem .7rem; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--fg); cursor:pointer; }
   button.btn:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); }
@@ -95,7 +96,7 @@
     </div>
     <div class="tablewrap">
       <table id="btable">
-        <thead><tr><th>Name</th><th class="num">Len</th><th class="num">GC%</th><th class="num">Tm</th><th>Reverse complement</th><th>RNA</th><th>Protein</th></tr></thead>
+        <thead><tr><th>Name</th><th class="num">Len</th><th class="num">GC%</th><th class="num">Tm</th><th>Reverse complement</th><th>RNA</th><th>Protein</th><th>Restriction sites</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -262,7 +263,8 @@ function parseSeqs(text){
 function batchRows(){
   return parseSeqs($('bseq').value).map(r => {
     const s = clean(r.seq), n = s.length, c = counts(s), t = tm(c,n);
-    return { name: r.name, n, gc: n ? gcPct(c,n) : '', tm: t === null ? '' : t, rc: revcomp(s), rna: toRNA(s), prot: translate(s) };
+    const re = n ? findSites(s).map(e => `${e.name}@${e.pos.join('/')}`).join('; ') : '';
+    return { name: r.name, n, gc: n ? gcPct(c,n) : '', tm: t === null ? '' : t, rc: revcomp(s), rna: toRNA(s), prot: translate(s), re };
   });
 }
 function esc(x){ return String(x).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
@@ -271,17 +273,17 @@ function updateBatch(){
   $('bcount').textContent = rows.length;
   const tb = $('btable').querySelector('tbody');
   tb.innerHTML = rows.map(r =>
-    `<tr><td>${esc(r.name)}</td><td class="num">${r.n}</td><td class="num">${r.gc===''?'–':r.gc}</td><td class="num">${r.tm===''?'–':r.tm}</td><td class="seq">${r.rc}</td><td class="seq">${r.rna}</td><td class="seq">${r.prot}</td></tr>`
+    `<tr><td>${esc(r.name)}</td><td class="num">${r.n}</td><td class="num">${r.gc===''?'–':r.gc}</td><td class="num">${r.tm===''?'–':r.tm}</td><td class="seq">${r.rc}</td><td class="seq">${r.rna}</td><td class="seq">${r.prot}</td><td class="re">${r.re ? esc(r.re) : '–'}</td></tr>`
   ).join('');
   ['dl-tsv','dl-csv','dl-xlsx'].forEach(id => { $(id).disabled = rows.length === 0; });
 }
 
 /* ---------- export: TSV / CSV / XLSX ---------- */
-const EXPORT_HEADER = ['name','length','GC%','Tm','revcomp','RNA','protein'];
+const EXPORT_HEADER = ['name','length','GC%','Tm','revcomp','RNA','protein','restriction_sites'];
 const enc = new TextEncoder();
 
 function exportMatrix(){
-  return batchRows().map(r => [r.name, r.n, r.gc, r.tm, r.rc, r.rna, r.prot]);
+  return batchRows().map(r => [r.name, r.n, r.gc, r.tm, r.rc, r.rna, r.prot, r.re]);
 }
 function saveBlob(filename, blob){
   const url = URL.createObjectURL(blob);
